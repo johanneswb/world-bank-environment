@@ -1,5 +1,5 @@
 # Author: Johannes Willmann
-# Date: 2020-06-19
+# Date: 2021-02-01
 
 import datetime
 import doctest
@@ -11,7 +11,7 @@ import seaborn as sns
 import wbdata
 
 
-INDICATOR = "SH.STA.BASS.ZS"
+INDICATOR = "SH.STA.SMSS.ZS"
 
 
 def generate_part1_output(indicator):
@@ -30,11 +30,11 @@ def retrieve_data_from_api(indicator):
     """
     Calls wbdata API client to retrieve WDI data and returns data as Pandas dataframe.
  
-    >>> VALID_INDICATOR = 'SH.STA.BASS.ZS'
+    >>> VALID_INDICATOR = 'SH.STA.SMSS.ZS'
     >>> INVALID_INDICATOR = 'foo'
 
     >>> type(retrieve_data_from_api(VALID_INDICATOR))
-    <class 'pandas.core.frame.DataFrame'>
+    <class 'wbdata.api.WBDataFrame'>
 
     >>> retrieve_data_from_api(INVALID_INDICATOR)
     This indicator could not be retrieved.
@@ -79,9 +79,9 @@ def retrieve_country_information_from_wb_api():
     Retrieves country information, such as income levels, from World Bank API.
 
     >>> [x['incomeLevel'] for x in retrieve_country_information_from_wb_api() if x.get('id') =='ABW']
-    [{'id': 'HIC', 'value': 'High income'}]
+    [{'id': 'HIC', 'iso2code': 'XD', 'value': 'High income'}]
     """
-    return wbdata.search_countries("", display=False)
+    return wbdata.search_countries("")
 
 
 def create_dataframe_from_country_information(country_information):
@@ -160,14 +160,17 @@ def create_chart(df):
             "Low income",
         ],
         palette=sns.dark_palette("navy", 4),
-        data=df,
+        data=df.sort_values("date"),
     )
 
-    sns.lineplot(x="date", y="value", label="World", data=df)
+    sns.lineplot(
+        x="date", y="value", label="All countries with data available", data=df
+    )
 
+    # ax.legend(loc="lower right")
     plt.xlabel("Date")
-    plt.ylabel("People using at least basic sanitation services (% of population)")
-    plt.title("People using at least basic sanitation services by income group")
+    plt.ylabel("People using safely managed sanitation services (% of population)")
+    plt.title("People using safely managed sanitation services by income group")
     plt.savefig("plot.png")
 
 
@@ -178,11 +181,11 @@ def create_document():
     """
 
     DESCRIPTION_OF_PLOT = """
-    To analyze changes and potential trends in the use of at least basic sanitation services (% of population), as well as the variance between income groups, I retrieved the relevant indicator from the World Bank API, transformed it into tabular form, joined information about a country's respective income level to the indicator data, and generated a chart from the combined indicator/income group data.
+    To analyze changes and potential trends in the use of safely managed sanitation services (% of population), as well as the variance between income groups, I retrieved the relevant indicator from the World Bank API, transformed it into tabular form, joined information about a country's respective income level to the indicator data, and generated a chart from the combined indicator/income group data.
 
-    The below chart displays the time range for which data was available via the API on the x-axis and the share of a population that is using at least basic sanitation services on the y-axis. The lines indicate the average share of the population using at least basic sanitation services by income group for a given point in time. The bands on either side of each line are confidence intervals.
+    The below chart displays the time range for which data was available via the API on the x-axis and the share of a population that is using safely managed sanitation services on the y-axis. The lines indicate the average share of the population using safely managed sanitation services by income group for a given point in time. The bands on either side of each line are confidence intervals.
 
-    The chart indicates that the use in at least basic sanitation services has indeed been changing with a positive trend throughout all income groups. However, large differences between income groups can be observed in the indicator's level at the outset of the data collection period, as well as how severely it changed over the observation period. Countries associated with a high-income level have the highest share of their populations using at least basic sanitation services, while countries associated with a low-income level score lowest. Changes in the indicator are more prevalent for the middle- and lower-income countries, with countries classified as 'Lower middle income' increasing most. 
+    The chart indicates that the use of safely managed sanitation services seems to be changing with a positive trend throughout all income groups. Large differences between income groups can be observed in the indicator's level. Countries associated with a high-income level have the highest share of their populations using safely managed sanitation services, while countries associated with a low-income level score lowest. However, the graph needs to be considered carefully: Data on the use of safely managed sanitation services is primarily available for high-income countries, some middle-income countries, but almost no low-income countries. Accordingly, the average over the included countries is likely not indicative of the global average, and the trends for low- and middle-income countries should only be used with caution.
     """
 
     pdf = FPDF()
